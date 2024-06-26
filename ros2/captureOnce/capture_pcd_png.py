@@ -13,23 +13,24 @@ import select
 import termios
 import sys
 from threading import Thread
+import struct
 
 
 
 
 class ImageSaver(Node):
-    def __init__(self, output_dir='./output'):
+    def __init__(self, png_subscription_topic, pcd_subscription_topic, output_dir):
         super().__init__('pcd_png_saver')
         self.png_subscription = self.create_subscription(
             Image,
-            '/image_raw/video7',  # 替换Image topic
+            png_subscription_topic,    #'/image_raw/video7',  # 替换Image topic
             self.save_image,
             10
         )
         self.pcd_subscription = self.create_subscription(
             PointCloud2,
-            '/rslidar_points_main',  # 这里替换为你的PointCloud2消息的topic名称
-            self.save_pointcloud_to_pcd,
+            pcd_subscription_topic,#      '/rslidar_points_main',  # 这里替换为你的PointCloud2消息的topic名称
+            self.save_pointcloud_to_pcd_bin,
             10
         )
         # 文件保存路径
@@ -62,7 +63,7 @@ class ImageSaver(Node):
         # else:
         #     print("Waiting for Enter key to save PNG...")
 
-    def save_pointcloud_to_pcd(self, msg):
+    def save_pointcloud_to_pcd_acs(self, msg):
         # 将PointCloud2消息转换为PCD格式
         if self.save_condition_pcd:
             points = list(pc2.read_points(msg, field_names=["x", "y", "z", "intensity"],skip_nans=True))
@@ -84,8 +85,38 @@ class ImageSaver(Node):
             
             print("PCD saved")
             self.save_condition_pcd =False
-        # else:
-        #     print("Waiting for Enter key to save PCD...")
+    
+    def save_pointcloud_to_pcd_bin(self, msg):
+        # 将PointCloud2消息转换为PCD格式
+        if self.save_condition_pcd:
+            # 读取点云数据为结构化数组，准备写入二进制文件
+            points_structured = pc2.read_points(msg, field_names=["x", "y", "z", "intensity"], skip_nans=True)
+
+            output_file = os.path.join(self.output_dir, f'{self.index}.pcd')
+            with open(output_file, 'wb') as pcd_file:
+                # 写入PCD文件头信息
+                pcd_file.write(b'# .PCD v.7 - Point Cloud Data file format\n')
+                pcd_file.write(b'VERSION .7\n')
+                pcd_file.write(b'FIELDS x y z intensity\n')
+                pcd_file.write(b'SIZE 4 4 4 4\n')
+                pcd_file.write(b'TYPE F F F F\n')
+                pcd_file.write(b'COUNT 1 1 1 1\n')
+                pcd_file.write(b'WIDTH ')
+                pcd_file.write(str(len(list(points_structured))).encode('utf-8'))
+                pcd_file.write(b'\nHEIGHT 1\n')
+                pcd_file.write(b'VIEWPOINT 0 0 0 1 0 0 0\n')
+                pcd_file.write(b'POINTS ')
+                pcd_file.write(str(len(list(points_structured))).encode('utf-8'))
+                pcd_file.write(b'\nDATA binary\n')
+
+                # 直接写入点云数据的二进制形式
+                for point in points_structured:
+                    # 修改这里以正确访问structured array的字段
+                    pcd_file.write(struct.pack('ffff', point['x'], point['y'], point['z'], point['intensity']))
+
+            print("PCD (binary) saved")
+            self.save_condition_pcd = False
+            
     def keyboard_listener(self):
             # 监听键盘输入
             while True:
@@ -96,11 +127,24 @@ class ImageSaver(Node):
                     self.save_condition_pcd = True
                     self.index += 1
                     print("saving...")
-def main(args=None):
-    rclpy.init(args=args)
-    image_saver = ImageSaver()
+def main(png_subscription_topic='/image',pcd_subscription_topic='/points',output_dir='./output'):
+    rclpy.init(args=None)
+    image_saver = ImageSaver(png_subscription_topic, pcd_subscription_topic, output_dir)
     rclpy.spin(image_saver)
     rclpy.shutdown()
 
 if __name__ == '__main__':
-    main()
+    import sys
+    if len(sys.argv) < 3:
+        print("Usage: python3 script.py <png_topic> <pcd_topic> <output_directory>")
+        print("   or: python3 script.py <png_topic> <pcd_topic> , default save in file: ./output")
+        sys.exit(1)
+
+    png_topic = sys.argv[1]
+    pcd_topic = sys.argv[2]
+    output_directory='./output'
+
+    if len(sys.argv)==4:
+        output_directory = sys.argv[3]
+
+    main(png_topic, pcd_topic, output_directory)
