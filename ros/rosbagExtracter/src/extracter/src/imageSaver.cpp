@@ -47,7 +47,7 @@ int main(int argc, char **argv)
 
  if(argc < 3) {
     std::cout << "Please enter at least 2 parameters" << std::endl;
-    std::cout << "example: rosrun pcd_image_save imageSaver [ image_type ] [ /path/to/save/image ]" << std::endl;
+    std::cout << "example: rosrun bagextracter imageSaver  < image_type >  < /path/to/save/image >" << std::endl;
     return 0;
  }
  type += std::string(argv[1]);

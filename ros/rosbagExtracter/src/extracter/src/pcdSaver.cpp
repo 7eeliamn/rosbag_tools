@@ -41,7 +41,7 @@ int main(int argc, char **argv)
 
  if(argc < 2) {
     std::cout << "Please enter at least 1 parameters" << std::endl;
-    std::cout << "example: rosrun pcd_image_save pcdSaver [ /path/to/save/pcd ]" << std::endl;
+    std::cout << "example: rosrun bagextracter pcdSaver < /path/to/save/pcd >" << std::endl;
     return 0;
  }
  path = std::string(argv[1]);
