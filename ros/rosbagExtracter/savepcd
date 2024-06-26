@@ -1,0 +1,4 @@
+#!/bin/bash
+source devel/setup.sh
+mkdir -p $1
+rosrun pcd_image_save pcdSaver $1

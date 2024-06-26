@@ -1,0 +1,7 @@
+#!/bin/bash
+source devel/setup.sh
+path_dir="/home/synkrotron/project/calib_factory/expriment_test/0625/video7_front/extrinsic_data"
+image_topic="/image_raw/video7"
+pcd_topic="/rslidar_points_main"
+num=20
+rosrun pcd_image_save bagReader ${path_dir}/double_board_6m.bag ${path_dir} ${pcd_topic} ${image_topic} ${num}

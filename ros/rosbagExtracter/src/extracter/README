@@ -1,0 +1,8 @@
+功能包主要功能
+pcl点云转换程pcd 图像转换为bmp
+先play rosbag 并且将图像对应topic重命名为/image 将点云对应topic重命名为/points_raw
+例子
+rosbag play bags.bag /image_raw/video14:=/image /rslidar_points_main:=/points_raw
+例子
+rosrun pcd_image_save pcdSaver [ /path/to/save/pcd ]
+rosrun pcd_image_save imageSaver [ image_type ] [ /path/to/save/image ]
